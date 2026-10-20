@@ -109,6 +109,10 @@ infomaniak mail mailboxes <id>                            # List mailboxes (need
 infomaniak mail show <id> <name>                          # Mailbox details
 infomaniak mail aliases <id> <name>                       # Mailbox aliases
 infomaniak mail forwarding <id> <name>                    # Mailbox forwarding settings
+infomaniak mail alias-add <id> <name> <alias>              # Add an alias (the part before the @)
+infomaniak mail alias-delete <id> <name> <alias>           # Remove an alias
+infomaniak mail forward-add <id> <name> <address>          # Forward mail to another address
+infomaniak mail forward-delete <id> <name> <address>       # Stop forwarding to an address
 ```
 
 ### Hosting & kDrive
@@ -257,6 +261,10 @@ Built on the [Infomaniak API](https://developer.infomaniak.com/docs/api):
 | `GET /1/mail_hostings/{id}/mailboxes/{name}` | Mailbox details |
 | `GET /1/mail_hostings/{id}/mailboxes/{name}/aliases` | Mailbox aliases |
 | `GET /1/mail_hostings/{id}/mailboxes/{name}/forwarding_addresses` | Mailbox forwarding |
+| `POST /1/mail_hostings/{id}/mailboxes/{name}/aliases` | Add alias |
+| `DELETE /1/mail_hostings/{id}/mailboxes/{name}/aliases/{alias}` | Remove alias |
+| `POST /1/mail_hostings/{id}/mailboxes/{name}/forwarding_addresses` | Add forwarding |
+| `DELETE /1/mail_hostings/{id}/mailboxes/{name}/forwarding_addresses/{address}` | Remove forwarding |
 
 ## License
 

@@ -26,7 +26,9 @@ from infomaniak_cli.commands.domains import cmd_domains
 from infomaniak_cli.commands.drive import cmd_drive_list
 from infomaniak_cli.commands.hosting import cmd_hosting_list
 from infomaniak_cli.commands.mail import (
-    cmd_mail_aliases, cmd_mail_forwarding, cmd_mail_list, cmd_mail_mailboxes, cmd_mail_show,
+    cmd_mail_alias_add, cmd_mail_alias_delete, cmd_mail_aliases, cmd_mail_forward_add,
+    cmd_mail_forward_delete, cmd_mail_forwarding, cmd_mail_list, cmd_mail_mailboxes,
+    cmd_mail_show,
 )
 from infomaniak_cli.commands.propagation import cmd_dns_propagation
 from infomaniak_cli.commands.zone import cmd_dns_zone
@@ -230,6 +232,21 @@ def main():
         sp.add_argument("mail_hosting_id", help="Mail hosting ID (from 'infomaniak mail list')")
         sp.add_argument("mailbox_name", help="Mailbox name, the part before the @")
         sp.add_argument("--json", action="store_true", help="Output as JSON")
+        sp.set_defaults(func=handler)
+
+    for name, help_text, handler, arg, confirms in (
+        ("alias-add", "Add a mailbox alias", cmd_mail_alias_add, "alias", False),
+        ("alias-delete", "Remove a mailbox alias", cmd_mail_alias_delete, "alias", True),
+        ("forward-add", "Forward a mailbox to another address", cmd_mail_forward_add, "address", True),
+        ("forward-delete", "Stop forwarding to an address", cmd_mail_forward_delete, "address", True),
+    ):
+        sp = mail_sub.add_parser(name, help=help_text + " (requires 'mail' scope)")
+        sp.add_argument("mail_hosting_id", help="Mail hosting ID (from 'infomaniak mail list')")
+        sp.add_argument("mailbox_name", help="Mailbox name, the part before the @")
+        sp.add_argument(arg, help="Alias before the @" if arg == "alias" else "Full email address")
+        if confirms:
+            sp.add_argument("--yes", "-y", action="store_true", help="Skip confirmation")
+        sp.add_argument("--dry-run", action="store_true", help="Show the change without applying it")
         sp.set_defaults(func=handler)
 
     # ── status ─────────────────────────────────────────────────────────────

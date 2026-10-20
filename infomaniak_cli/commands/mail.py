@@ -84,11 +84,14 @@ def cmd_mail_mailboxes(args):
     print()
 
 
+def _mailbox_path(args, suffix=""):
+    name = quote(args.mailbox_name, safe="")
+    return f"/1/mail_hostings/{args.mail_hosting_id}/mailboxes/{name}{suffix}"
+
+
 def _mailbox_get(args, suffix=""):
     token = get_token()
-    name = quote(args.mailbox_name, safe="")
-    path = f"/1/mail_hostings/{args.mail_hosting_id}/mailboxes/{name}{suffix}"
-    return api_request("GET", path, token).get("data", {})
+    return api_request("GET", _mailbox_path(args, suffix), token).get("data", {})
 
 
 def _flag(value):
@@ -150,3 +153,63 @@ def cmd_mail_forwarding(args):
     print(f"\n  {bold('Forwarding')}\n")
     print_table(["Setting", "Value"], rows)
     print()
+
+
+def _write(args, method, suffix, summary, body=None, confirm=None):
+    """Preview, optionally confirm, then send one mailbox change."""
+    dry_run = getattr(args, "dry_run", False)
+    print(f"\n  {'Would ' + summary if dry_run else summary[0].upper() + summary[1:]}")
+    if dry_run:
+        print(f"  {dim('Dry run — no changes applied.')}\n")
+        return
+    if confirm and not getattr(args, "yes", False):
+        try:
+            answer = input(f"  {confirm} [y/N] ")
+        except EOFError:
+            print(f"\n  {red('✗')} No terminal to confirm on. Pass --yes to continue without asking.")
+            sys.exit(1)
+        if answer.lower() not in ("y", "yes"):
+            print(f"  {dim('Aborted.')}")
+            return
+    api_request(method, _mailbox_path(args, suffix), get_token(), json_data=body)
+    print(f"  {green('✓')} Done.\n")
+
+
+def _local_part(args):
+    if "@" in args.alias:
+        print(f"  {red('✗')} Give the alias without the domain, e.g. 'support' for support@example.com.")
+        sys.exit(1)
+    return args.alias
+
+
+def cmd_mail_alias_add(args):
+    """Add an alias to a mailbox. Requires 'mail' scope."""
+    alias = _local_part(args)
+    _write(args, "POST", "/aliases", f"add alias {bold(alias)} to mailbox {args.mailbox_name}",
+           body={"alias": alias})
+
+
+def cmd_mail_alias_delete(args):
+    """Remove an alias from a mailbox. Requires 'mail' scope."""
+    alias = _local_part(args)
+    _write(args, "DELETE", f"/aliases/{quote(alias, safe='')}",
+           f"remove alias {bold(alias)} from mailbox {args.mailbox_name}",
+           confirm=f"Remove alias {alias}?")
+
+
+def cmd_mail_forward_add(args):
+    """Forward a mailbox's mail to another address. Requires 'mail' scope."""
+    if "@" not in args.address:
+        print(f"  {red('✗')} Give a full email address to forward to.")
+        sys.exit(1)
+    _write(args, "POST", "/forwarding_addresses",
+           f"forward mail for {args.mailbox_name} to {bold(args.address)}",
+           body={"redirect_address": args.address},
+           confirm=f"Forward all mail for {args.mailbox_name} to {args.address}?")
+
+
+def cmd_mail_forward_delete(args):
+    """Stop forwarding a mailbox's mail to an address. Requires 'mail' scope."""
+    _write(args, "DELETE", f"/forwarding_addresses/{quote(args.address, safe='')}",
+           f"stop forwarding mail for {args.mailbox_name} to {bold(args.address)}",
+           confirm=f"Stop forwarding to {args.address}?")
